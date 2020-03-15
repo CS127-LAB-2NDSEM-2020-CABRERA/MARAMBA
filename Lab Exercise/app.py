@@ -57,17 +57,23 @@ class ProductsList(Resource):
 
 @productRoutes.route('/product/<int:id>')
 class Products(Resource):
-	
 	def get(self,id):
-		cursor = connection.cursor(buffered=True)
-		cursor.execute(f"SELECT * FROM products WHERE id={id}")
-		product = cursor.fetchone()
-		return product, 200
+		single_product_query = f"SELECT * FROM products WHERE id={id}"
+		product = execute_read_query(single_product_query)
+		if(product == []):
+			return ("ID {} does not exist".format(id), 404)
+		else:	
+			return product, 200
 	
 	def delete(self,id):
-		cursor = connection.cursor(buffered=True)
-		cursor.execute(f"DELETE FROM products WHERE id={id}")
-		return {"gg":"gg"}, 204
+		single_product_query = f"SELECT * FROM products WHERE id={id}"
+		product = execute_read_query(single_product_query)
+		if(product == []):
+			return ("ID {} does not exist".format(id), 404)
+		else:	
+			cursor = connection.cursor(buffered=True)
+			cursor.execute(f"DELETE FROM products WHERE id={id}")
+			return ("ID {} deleted".format(id), 204)
 
 	@productRoutes.expect(product)
 	def put(self,id):
@@ -76,24 +82,39 @@ class Products(Resource):
 		price = request.json.get("price")
 		qty = request.json.get("qty")
 
-		cursor = connection.cursor(buffered=True)
-		cursor.execute(f"""
-			UPDATE products 
-			SET 
-				name = '{name}',
-				description = '{description}',
-				price = '{price}',
-				qty = '{qty}'
-			WHERE id = {id}
-			""")
-		cursor.execute(f"SELECT * FROM products WHERE id={id}")
-		product = cursor.fetchone()
+		single_product_query = f"SELECT * FROM products WHERE id={id}"
+		product = execute_read_query(single_product_query)
+		if(product == []):
+			return ("ID {} does not exist".format(id), 404)
+		else:
+			cursor = connection.cursor(buffered=True)
+			cursor.execute(f"""
+				UPDATE products 
+				SET 
+					name = '{name}',
+					description = '{description}',
+					price = '{price}',
+					qty = '{qty}'
+				WHERE id = {id}
+				""")
+			cursor.execute(f"SELECT * FROM products WHERE id={id}")
+			product = cursor.fetchone()
+			return product, 200
 
-		return product, 200
 
-# @productRoutes.route('/product')
-# class Products(Resource):
-# 	def post(self,)
+@productRoutes.route('/product')
+@productRoutes.expect(product)
+class Products(Resource):
+ 	def post(self):
+ 		name = request.json.get("name")
+ 		description = request.json.get("description")
+ 		price = request.json.get("price")
+ 		qty = request.json.get("qty")
+
+ 		insert_product_query = f"INSERT INTO products(name, description, price, qty) VALUES ('{name}', '{description}', '{price}', '{qty}')"
+ 		product = execute_read_query(insert_product_query)
+ 		return ("Product added successfully", 200)
+
 
 
 # Run Server
